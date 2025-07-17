@@ -35,22 +35,29 @@ module.exports = {
         const url = `https://api.openweathermap.org/data/2.5/forecast?lat=${loc.lat}&lon=${loc.lon}&appid=${weather_api_key}&units=metric&lang=ja`;
 
         try {
+            // ✅ 先にインタラクションを確保
+            await interaction.deferReply();
+
             const res = await axios.get(url);
             const list = res.data.list;
 
-            // 日付の準備
             const now = new Date();
             const todayStr = now.toISOString().split('T')[0];
             const tomorrowStr = new Date(now.setDate(now.getDate() + 1)).toISOString().split('T')[0];
 
-            // 各日の午前9時のデータを抽出
-            const today = list.find(f => f.dt_txt.includes(`${todayStr} 09:00:00`));
-            const tomorrow = list.find(f => f.dt_txt.includes(`${tomorrowStr} 09:00:00`));
+            // 柔軟な時間抽出
+            const getForecastByDate = (list, dateStr) =>
+                list.find(f => f.dt_txt.includes(`${dateStr} 09:00:00`)) ||
+                list.find(f => f.dt_txt.includes(`${dateStr} 06:00:00`)) ||
+                list.find(f => f.dt_txt.includes(`${dateStr} 12:00:00`)) ||
+                list.find(f => f.dt_txt.startsWith(dateStr));
+
+            const today = getForecastByDate(list, todayStr);
+            const tomorrow = getForecastByDate(list, tomorrowStr);
 
             if (!today || !tomorrow) {
-                return await interaction.reply({
-                    content: '⚠️ 今日または明日の天気データが見つかりませんでした。',
-                    flags: 64
+                return await interaction.editReply({
+                    content: '⚠️ 今日または明日の天気データが見つかりませんでした。'
                 });
             }
 
@@ -72,21 +79,18 @@ module.exports = {
                 .setColor(0x1e90ff)
                 .setFooter({ text: '提供：OpenWeatherMap' });
 
-            await interaction.reply({ embeds: [embed] });
+            await interaction.editReply({ embeds: [embed] });
 
         } catch (err) {
             console.error('❌ 天気APIエラー:', err);
-
             try {
                 if (interaction.replied || interaction.deferred) {
-                    await interaction.followUp({
-                        content: '⚠️ 天気情報の取得に失敗しました。',
-                        flags: 64
+                    await interaction.editReply({
+                        content: '⚠️ 天気情報の取得に失敗しました。'
                     });
                 } else {
                     await interaction.reply({
-                        content: '⚠️ 天気情報の取得に失敗しました。',
-                        flags: 64
+                        content: '⚠️ 天気情報の取得に失敗しました。'
                     });
                 }
             } catch (innerErr) {
