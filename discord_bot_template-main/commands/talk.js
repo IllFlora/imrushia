@@ -1,4 +1,4 @@
-﻿const { SlashCommandBuilder } = require('discord.js');
+﻿const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const OpenAI = require('openai');
 require('dotenv').config();
 
@@ -56,7 +56,19 @@ module.exports = {
 			});
 
 			const reply = completion.choices[0].message.content;
-			await interaction.editReply(reply);
+
+			const embed = new EmbedBuilder()
+				.setColor(0xF472B6) // ピンク系
+				.setTitle('💬 ユウキとのおしゃべり')
+				.addFields(
+					{ name: '🧑 あんたの質問', value: prompt },
+					{ name: '🗯️ ユウキの返事', value: reply }
+				)
+				.setFooter({ text: 'ツンデレ美少女AI・ユウキ（17歳）' })
+				.setTimestamp();
+
+			await interaction.editReply({ embeds: [embed] });
+
 		} catch (err) {
 			console.error(err);
 			await interaction.editReply('❌ ユウキ、ちょっと不機嫌かも…（エラー）');
