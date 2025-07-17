@@ -1,7 +1,7 @@
 ﻿require('dotenv').config(); // ← .env 読み込み
 
 const { Client, GatewayIntentBits, EmbedBuilder } = require('discord.js');
-const { getUserTweets } = require('../twikit');
+const { getUserTweets } = require('../twikit'); // ✅ 親フォルダにあるtwikitを参照
 
 
 
