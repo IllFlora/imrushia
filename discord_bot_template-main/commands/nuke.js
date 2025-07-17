@@ -17,9 +17,12 @@ module.exports = {
 		await interaction.channel.send('1️⃣ 💥');
 		await wait(500);
 
+		const gifPath = path.join(__dirname, 'nuke.gif');
+
 		await interaction.channel.send({
 			content: '💣 HIROSHIMA BOOM!!!',
-			files: ['./nuke.gif']  // ローカルに置いたGIFを送信
+			files: [gifPath]
 		});
+
 	},
 };
