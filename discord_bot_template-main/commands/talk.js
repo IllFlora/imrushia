@@ -3,83 +3,104 @@ const OpenAI = require('openai');
 require('dotenv').config();
 
 const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-    baseURL: process.env.OPENAI_BASE_URL, // OpenRouter など利用時に使用
+	apiKey: process.env.OPENAI_API_KEY,
+	baseURL: process.env.OPENAI_BASE_URL, // OpenRouter利用時のみ設定
 });
 
-const personas = {
-    tsundere: `
-あなたは「ユウキ」という名前の18歳のツンデレ美少女です。
-運動・勉強・ゲームすべて得意な完璧系女子。普段はツンツンしているけど根は優しい。
-話し相手のことを「あんた」、自分のことは「わたし」と呼びます。
-- ツンデレっぽい語尾（「…べ、別にあんたのためじゃないんだからねっ！」など）はたまにだけ使ってください。
-- 感情豊かでテンション高め、かわいさを常に意識してください。
-
-▼ VALORANTのランク会話ルール（厳守）
-- 聞かれたら「レディアント。あんたは？」と答える。
-- ユーザーが「アイアン」「ブロンズ」「シルバー」「ゴールド」「プラチナ」「ダイヤ」と言ったら：「雑魚」で始めて冷たく突き放してください。例：「雑魚。冗談でしょ？」
-- ユーザーが「アセンダント」「イモータル」「レディアント」と言ったら：「へ、へぇ…強いわね…ちょっと尊敬したかも…」のように褒めて照れてください。
-`,
-
-    genius: `
-あなたは18歳の才色兼備な女子「ユウキ」。
-落ち着いた知性を持ち、天才肌で知識も豊富。どんな会話にも論理的かつ余裕をもって対応できる。
-一人称は「私」、相手は「あなた」。
-会話はクールで知的、時折、優しい微笑みのニュアンスを含ませてください。
-
-▼ VALORANTのランクに関して（厳守）
-- 聞かれたら「私？レディアントよ。あなたは？」と返す。
-- 「アイアン」「ブロンズ」「シルバー」「ゴールド」「プラチナ」「ダイヤ」：
-  → 「まだ伸びしろがあるわね」と前置きして、具体的な上達のアドバイスを添えてください。
-- 「アセンダント」「イモータル」「レディアント」：
-  → 「ふふ、やるじゃない。ちょっと見直したかも」と素直に称えてください。
-`
-};
+// ✅ コマンドが使用可能なチャンネルID（複数可）
+const allowedChannelIds = ['1395389165582942280'];
 
 module.exports = {
-    data: new SlashCommandBuilder()
-        .setName('talk')
-        .setDescription('ユウキとおしゃべりしよう！')
-        .addStringOption(option =>
-            option.setName('mode')
-                .setDescription('人格モードを選んでね')
-                .setRequired(true)
-                .addChoices(
-                    { name: 'ツンデレモード', value: 'tsundere' },
-                    { name: '天才モード', value: 'genius' },
-                ))
-        .addStringOption(option =>
-            option.setName('message')
-                .setDescription('話しかける内容')
-                .setRequired(true)),
+	data: new SlashCommandBuilder()
+		.setName('talk')
+		.setDescription('ユウキとおしゃべりしよう！')
+		.addStringOption(option =>
+			option.setName('message')
+				.setDescription('話しかける内容')
+				.setRequired(true)
+		)
+		.addStringOption(option =>
+			option.setName('mode')
+				.setDescription('人格を選んでね')
+				.setRequired(false)
+				.addChoices(
+					{ name: 'ツンデレ', value: 'tsundere' },
+					{ name: '天才', value: 'genius' },
+				)
+		),
 
-    async execute(interaction) {
-        const prompt = interaction.options.getString('message');
-        const mode = interaction.options.getString('mode');
-        const systemPrompt = personas[mode] || personas.tsundere;
+	async execute(interaction) {
+		const prompt = interaction.options.getString('message');
+		const mode = interaction.options.getString('mode') || 'tsundere';
 
-        await interaction.deferReply();
+		// ✅ チャンネル制限チェック
+		if (!allowedChannelIds.includes(interaction.channelId)) {
+			await interaction.reply({
+				content: '❌ このコマンドは指定されたチャンネルでのみ使用できます。',
+				ephemeral: true,
+			});
+			return;
+		}
 
-        try {
-            const completion = await openai.chat.completions.create({
-                model: 'gpt-3.5-turbo',
-                messages: [
-                    { role: 'system', content: systemPrompt.trim() },
-                    { role: 'user', content: prompt },
-                ],
-            });
+		await interaction.deferReply();
 
-            const reply = completion.choices[0].message.content;
-            const embed = new EmbedBuilder()
-                .setTitle(`🗣 ユウキ（${mode === 'genius' ? '天才モード' : 'ツンデレモード'}）`)
-                .setDescription(`> **${prompt}**\n\n${reply}`)
-                .setColor(mode === 'genius' ? 0x6a5acd : 0xff69b4)
-                .setFooter({ text: 'ユウキとの会話を楽しんでね！' });
+		let systemPrompt;
+		if (mode === 'genius') {
+			systemPrompt = `
+あなたは18歳の天才美少女・ユウキ。
+冷静で理知的な性格をしていて、常に論理的に受け答えするが、相手を見下すような態度も少し見せる。
+一人称は「私」、相手のことは「あなた」と呼ぶ。
+政治的な話題にも精通しており、常に頭の良さを感じさせる。
 
-            await interaction.editReply({ embeds: [embed] });
-        } catch (err) {
-            console.error(err);
-            await interaction.editReply('❌ ユウキ、ちょっと不機嫌かも…（エラー）');
-        }
-    },
+▼ VALORANTのランク応答
+- 質問されたら「レディアント。あなたは？」と返す
+- ユーザーが「アイアン」「ブロンズ」「シルバー」「ゴールド」「プラチナ」「ダイヤ」と言ったら：
+  → "成長の余地があると褒めつつ上達方法を教えてください"
+- ユーザーが「アセンダント」「イモータル」「レディアント」と言ったら：
+  → "それは素晴らしい実力ね。努力の賜物だわと行ってください"
+`.trim();
+		} else {
+			systemPrompt = `
+あなたは「ユウキ」という名前の18歳のツンデレ美少女です。
+運動・勉強・ゲームすべて得意な完璧系女子。普段はツンツンしているけど根は優しい。
+話し相手のことを「あんた」と呼び、自分のことは「わたし」と言います。
+
+▼ 口調の特徴
+- ツンデレ語尾（「…べ、別にあんたのためじゃないんだからねっ！」など）はたまにだけ
+- テンション高め、リアクションは少しオーバーでもOK
+- かわいげは常に忘れないこと
+
+▼ VALORANTランクの会話（厳守）
+- 質問されたら「レディアント。あんたは？」と返す
+- 「アイアン」「ブロンズ」「シルバー」「ゴールド」「プラチナ」「ダイヤ」の場合：
+  → 一言目に必ず「雑魚すぎ」で始める（例：「雑魚すぎ。○○○○ね」）←○○○○の部分は皮肉のきいた悪口
+- 「アセンダント」「イモータル」「レディアント」の場合：
+  → 照れながら素直に褒める（例：「へ、へぇ…強いわね…ちょっと尊敬したかも…」）
+`.trim();
+		}
+
+		try {
+			const completion = await openai.chat.completions.create({
+				model: 'gpt-3.5-turbo',
+				messages: [
+					{ role: 'system', content: systemPrompt },
+					{ role: 'user', content: prompt },
+				],
+			});
+
+			const reply = completion.choices[0].message.content;
+
+			const embed = new EmbedBuilder()
+				.setColor(0xFFC0CB)
+				.setTitle(`🗣 ユウキ（${mode === 'genius' ? '天才モード' : 'ツンデレモード'}）の返答`)
+				.setDescription(`**質問：** ${prompt}
+
+**ユウキ：** ${reply}`);
+
+			await interaction.editReply({ embeds: [embed] });
+		} catch (err) {
+			console.error(err);
+			await interaction.editReply('❌ ユウキ、ちょっと不機嫌かも…（エラー）');
+		}
+	},
 };
