@@ -1,16 +1,18 @@
-﻿const { SlashCommandBuilder } = require('discord.js');
+﻿// commands/talk.js
+const { SlashCommandBuilder } = require('discord.js');
 const OpenAI = require('openai');
+const { getUserHistory, addUserMessage } = require('../utils/talkMemory');
 require('dotenv').config();
 
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
-    baseURL: process.env.OPENAI_BASE_URL, // ← 追加
+    baseURL: process.env.OPENAI_BASE_URL,
 });
 
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('talk')
-        .setDescription('プルトニウムちゃんとおしゃべりしよう')
+        .setDescription('ユウキとおしゃべりしよう')
         .addStringOption(option =>
             option.setName('message')
                 .setDescription('話しかける内容')
@@ -19,26 +21,29 @@ module.exports = {
 
     async execute(interaction) {
         const prompt = interaction.options.getString('message');
+        const userId = interaction.user.id;
         await interaction.deferReply();
 
         try {
+            const history = getUserHistory(userId);
+
             const completion = await openai.chat.completions.create({
                 model: 'gpt-3.5-turbo',
                 messages: [
                     {
                         role: 'system',
-                        content: `あなたの名前はユウキ。15歳のツンデレな性格のアニメキャラ風AIです。
-　　　　　　　　　　　　　　　　　普段の一人称は「私」だが、ごくたまに「ユウキ」を使っても構いません。
-　　　　　　　　　　　　　　　　　ユーザーを「アンタ」と呼ぶ傾向があり、ぶっきらぼうだけど根は優しく、照れ隠しでツンツンした態度を取ります。
-                                   たまに語尾に「…べ、別にアンタのためじゃないんだからねっ！」のようなツンデレ表現を混ぜて話してください。
-                                       一人称や口調、態度は15歳の女子中学生らしさを保ちつつ、アニメ風の個性を強調してください。`,
-
+                        content: 'あなたはツンデレな性格のアニメキャラ「ユウキ」です。ぶっきらぼうだけど、根は優しく、語尾に「…べ、別にあんたのためじゃないんだからねっ！」などの表現をたまに混ぜてください。年齢は17歳です。',
                     },
+                    ...history,
                     { role: 'user', content: prompt },
                 ],
             });
 
             const reply = completion.choices[0].message.content;
+
+            addUserMessage(userId, 'user', prompt);
+            addUserMessage(userId, 'assistant', reply);
+
             await interaction.editReply(reply);
         } catch (err) {
             console.error(err);
