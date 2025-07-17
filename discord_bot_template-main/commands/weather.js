@@ -16,7 +16,7 @@ const locationMap = {
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('weather')
-        .setDescription('選択した都市の天気を表示します')
+        .setDescription('指定した都市の今日と明日の天気を表示します')
         .addStringOption(option =>
             option.setName('city')
                 .setDescription('都市を選んでください')
@@ -32,24 +32,25 @@ module.exports = {
     async execute(client, interaction) {
         const cityKey = interaction.options.getString('city');
         const loc = locationMap[cityKey];
-
         const url = `https://api.openweathermap.org/data/2.5/forecast?lat=${loc.lat}&lon=${loc.lon}&appid=${weather_api_key}&units=metric&lang=ja`;
 
         try {
             const res = await axios.get(url);
             const list = res.data.list;
 
+            // 日付の準備
             const now = new Date();
             const todayStr = now.toISOString().split('T')[0];
             const tomorrowStr = new Date(now.setDate(now.getDate() + 1)).toISOString().split('T')[0];
 
+            // 各日の午前9時のデータを抽出
             const today = list.find(f => f.dt_txt.includes(`${todayStr} 09:00:00`));
             const tomorrow = list.find(f => f.dt_txt.includes(`${tomorrowStr} 09:00:00`));
 
             if (!today || !tomorrow) {
                 return await interaction.reply({
-                    content: '⚠️ 今日または明日の予報データが取得できませんでした。',
-                    ephemeral: true
+                    content: '⚠️ 今日または明日の天気データが見つかりませんでした。',
+                    flags: 64
                 });
             }
 
@@ -74,8 +75,23 @@ module.exports = {
             await interaction.reply({ embeds: [embed] });
 
         } catch (err) {
-            console.error('天気APIエラー:', err);
-            await interaction.reply({ content: '⚠️ 天気情報の取得に失敗しました。', ephemeral: true });
+            console.error('❌ 天気APIエラー:', err);
+
+            try {
+                if (interaction.replied || interaction.deferred) {
+                    await interaction.followUp({
+                        content: '⚠️ 天気情報の取得に失敗しました。',
+                        flags: 64
+                    });
+                } else {
+                    await interaction.reply({
+                        content: '⚠️ 天気情報の取得に失敗しました。',
+                        flags: 64
+                    });
+                }
+            } catch (innerErr) {
+                console.error('⚠️ エラーレスポンス送信失敗:', innerErr);
+            }
         }
     }
 };
