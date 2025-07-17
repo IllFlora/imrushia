@@ -29,13 +29,12 @@ module.exports = {
                 )
         ),
 
-    async execute(client, interaction) {
+    async execute(interaction) {
         const cityKey = interaction.options.getString('city');
         const loc = locationMap[cityKey];
         const url = `https://api.openweathermap.org/data/2.5/forecast?lat=${loc.lat}&lon=${loc.lon}&appid=${weather_api_key}&units=metric&lang=ja`;
 
         try {
-            // ✅ 先にインタラクションを確保
             await interaction.deferReply();
 
             const res = await axios.get(url);
@@ -45,7 +44,6 @@ module.exports = {
             const todayStr = now.toISOString().split('T')[0];
             const tomorrowStr = new Date(now.setDate(now.getDate() + 1)).toISOString().split('T')[0];
 
-            // 柔軟な時間抽出
             const getForecastByDate = (list, dateStr) =>
                 list.find(f => f.dt_txt.includes(`${dateStr} 09:00:00`)) ||
                 list.find(f => f.dt_txt.includes(`${dateStr} 06:00:00`)) ||
@@ -72,10 +70,7 @@ module.exports = {
 
             const embed = new EmbedBuilder()
                 .setTitle(`${loc.name}の天気予報`)
-                .setDescription([
-                    format(today, '今日'),
-                    format(tomorrow, '明日')
-                ].join('\n\n'))
+                .setDescription([format(today, '今日'), format(tomorrow, '明日')].join('\n\n'))
                 .setColor(0x1e90ff)
                 .setFooter({ text: '提供：OpenWeatherMap' });
 
@@ -90,7 +85,8 @@ module.exports = {
                     });
                 } else {
                     await interaction.reply({
-                        content: '⚠️ 天気情報の取得に失敗しました。'
+                        content: '⚠️ 天気情報の取得に失敗しました。',
+                        flags: 64
                     });
                 }
             } catch (innerErr) {

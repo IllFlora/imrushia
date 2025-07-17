@@ -5,7 +5,7 @@ module.exports = {
 		.setName('nuke')
 		.setDescription('このチャンネル内のメッセージを一括削除します（14日以内、最大100件）'),
 
-	async execute(client, interaction) {
+	async execute(interaction) {
 		const guild = interaction.guild;
 		const username = interaction.user.tag;
 		const userId = interaction.user.id;
@@ -13,29 +13,27 @@ module.exports = {
 
 		const logMessage = `[NUKEログ]\nユーザー: ${username} (${userId})\nサーバー: ${guild.name}\nチャンネル: #${interaction.channel.name}`;
 
-		// サーバーオーナーのUserオブジェクトを取得
-		const owner = await client.users.fetch(ownerId);
-
 		try {
-			// ログ：オーナーのDMに送信（まず試みる）
-			await owner.send(`${logMessage}\n⛔ 拒否されました（オーナーのみが実行可能）`);
-		} catch (dmErr) {
-			console.warn('❗ オーナーにDMを送れませんでした:', dmErr.message);
-		}
+			const owner = await interaction.client.users.fetch(ownerId);
 
-		if (userId !== ownerId) {
-			return await interaction.reply({
-				content: '❌ このコマンドはサーバーのオーナーのみが使用できます。',
-				ephemeral: true
-			});
-		}
+			// オーナー以外は拒否
+			if (userId !== ownerId) {
+				try {
+					await owner.send(`${logMessage}\n⛔ 拒否されました（オーナーのみが実行可能）`);
+				} catch (dmErr) {
+					console.warn('❗ オーナーにDMを送れませんでした:', dmErr.message);
+				}
 
-		try {
-			await interaction.reply({ content: '🧹 メッセージを削除中...', ephemeral: true });
+				return await interaction.reply({
+					content: '❌ このコマンドはサーバーのオーナーのみが使用できます。',
+					flags: 64, // ephemeral: true 相当
+				});
+			}
+
+			await interaction.reply({ content: '🧹 メッセージを削除中...', flags: 64 });
 
 			const deletedMessages = await interaction.channel.bulkDelete(100, true);
 
-			// ログをオーナーにDMで送信（成功時）
 			try {
 				await owner.send(`${logMessage}\n✅ ${deletedMessages.size} 件のメッセージが削除されました。`);
 			} catch (dmErr) {
@@ -44,16 +42,15 @@ module.exports = {
 
 			await interaction.followUp({
 				content: `✅ ${deletedMessages.size} 件のメッセージを削除しました。`,
-				ephemeral: false
 			});
 		} catch (err) {
 			console.error('💥 /nuke 実行エラー:', err);
 
 			if (interaction.replied || interaction.deferred) {
-				await interaction.followUp({ content: '⚠️ エラーが発生しました。', ephemeral: true });
+				await interaction.followUp({ content: '⚠️ エラーが発生しました。', flags: 64 });
 			} else {
-				await interaction.reply({ content: '⚠️ エラーが発生しました。', ephemeral: true });
+				await interaction.reply({ content: '⚠️ エラーが発生しました。', flags: 64 });
 			}
 		}
-	}
+	},
 };
