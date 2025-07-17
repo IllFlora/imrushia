@@ -1,7 +1,8 @@
 ﻿require('dotenv').config(); // ← .env 読み込み
 
 const { Client, GatewayIntentBits, EmbedBuilder } = require('discord.js');
-const { getUserTweets } = require('./twikit'); // ローカルの twikit モジュールを使用
+const { getUserTweets } = require('twikit'); // ✅ ← モジュールとして読み込み
+
 
 // 🔐 環境変数からトークンとチャンネルIDを取得
 const botToken = process.env.TOKEN;
