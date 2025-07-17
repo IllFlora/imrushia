@@ -18,8 +18,8 @@ module.exports = {
 		await wait(500);
 
 		await interaction.channel.send({
-			content: '💣 BOOM!!!',
-			files: ['https://media.tenor.com/MfYkVGGrdbkAAAAd/gord%C3%A3o-bomba-nuclear.gif']
+			content: '💣 BOOM!!!\nhttps://media.tenor.com/MfYkVGGrdbkAAAAd/gord%C3%A3o-bomba-nuclear.gif'
 		});
+
 	},
 };
