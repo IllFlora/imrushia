@@ -4,6 +4,7 @@ require('dotenv').config();
 
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
+    baseURL: process.env.OPENAI_BASE_URL, // ← 追加
 });
 
 module.exports = {
