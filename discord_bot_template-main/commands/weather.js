@@ -3,40 +3,23 @@ const axios = require('axios');
 const { weather_api_key } = require('../config.json');
 
 const locationMap = {
-    Sapporo: { name: '札幌', lat: 43.0667, lon: 141.35 },
-    Sendai: { name: '仙台', lat: 38.2688, lon: 140.8721 },
+    Nagano: { name: '長野', lat: 36.6513, lon: 138.181 },
     Fukushima: { name: '福島', lat: 37.75, lon: 140.4678 },
     Tokyo: { name: '東京', lat: 35.6895, lon: 139.6917 },
-    Yokohama: { name: '横浜', lat: 35.4437, lon: 139.638 },
-    Nagano: { name: '長野', lat: 36.6513, lon: 138.181 },
-    Nagoya: { name: '名古屋', lat: 35.1815, lon: 136.9066 },
-    Kanazawa: { name: '金沢', lat: 36.5613, lon: 136.6562 },
-    Shizuoka: { name: '静岡', lat: 34.9756, lon: 138.3828 },
-    Osaka: { name: '大阪', lat: 34.6937, lon: 135.5023 },
-    Kyoto: { name: '京都', lat: 35.0116, lon: 135.7681 },
-    Kobe: { name: '神戸', lat: 34.6901, lon: 135.1955 },
-    Okayama: { name: '岡山', lat: 34.6551, lon: 133.9195 },
+    Kanagawa: { name: '神奈川', lat: 35.4478, lon: 139.6425 },
     Hiroshima: { name: '広島', lat: 34.3853, lon: 132.4553 },
-    Yamaguchi: { name: '山口', lat: 34.1859, lon: 131.4714 },
-    Takamatsu: { name: '高松', lat: 34.3402, lon: 134.0434 },
-    Matsuyama: { name: '松山', lat: 33.8392, lon: 132.7657 },
-    Fukuoka: { name: '福岡', lat: 33.5902, lon: 130.4017 },
-    Kitakyushu: { name: '北九州', lat: 33.883, lon: 130.8753 },
-    Kumamoto: { name: '熊本', lat: 32.7898, lon: 130.7417 },
-    Oita: { name: '大分', lat: 33.2396, lon: 131.6093 },
-    Miyazaki: { name: '宮崎', lat: 31.9111, lon: 131.4239 },
-    Kagoshima: { name: '鹿児島', lat: 31.5602, lon: 130.5581 },
-    Naha: { name: '那覇', lat: 26.2124, lon: 127.6809 },
-    Morioka: { name: '盛岡', lat: 39.7036, lon: 141.1527 }
+    Ibaraki: { name: '茨城', lat: 36.3418, lon: 140.4468 },
+    Osaka: { name: '大阪', lat: 34.6937, lon: 135.5023 },
+    Yamaguchi: { name: '山口', lat: 34.1859, lon: 131.4714 }
 };
 
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('weather')
-        .setDescription('指定した都市の天気を表示します')
+        .setDescription('選択した都市の天気を表示します')
         .addStringOption(option =>
             option.setName('city')
-                .setDescription('都市を選択してください')
+                .setDescription('都市を選んでください')
                 .setRequired(true)
                 .addChoices(
                     ...Object.entries(locationMap).map(([key, value]) => ({
@@ -63,6 +46,13 @@ module.exports = {
             const today = list.find(f => f.dt_txt.includes(`${todayStr} 09:00:00`));
             const tomorrow = list.find(f => f.dt_txt.includes(`${tomorrowStr} 09:00:00`));
 
+            if (!today || !tomorrow) {
+                return await interaction.reply({
+                    content: '⚠️ 今日または明日の予報データが取得できませんでした。',
+                    ephemeral: true
+                });
+            }
+
             const format = (data, label) => {
                 const temp = data.main.temp.toFixed(1);
                 const humid = data.main.humidity;
@@ -78,12 +68,13 @@ module.exports = {
                     format(today, '今日'),
                     format(tomorrow, '明日')
                 ].join('\n\n'))
-                .setColor(0x00bfff)
+                .setColor(0x1e90ff)
                 .setFooter({ text: '提供：OpenWeatherMap' });
 
             await interaction.reply({ embeds: [embed] });
+
         } catch (err) {
-            console.error(err);
+            console.error('天気APIエラー:', err);
             await interaction.reply({ content: '⚠️ 天気情報の取得に失敗しました。', ephemeral: true });
         }
     }
