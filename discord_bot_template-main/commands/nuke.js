@@ -4,10 +4,10 @@ const wait = require('node:timers/promises').setTimeout;
 module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('nuke')
-		.setDescription('💣 爆破演出をします（メッセージは削除しません）'),
+		.setDescription('💣 あの頃の躍動をもう一度'),
 
 	async execute(client, interaction) {
-		await interaction.reply({ content: '💣 起爆装置起動中...', ephemeral: false });
+		await interaction.reply({ content: '💣 リトルボーイ起動中...', ephemeral: false });
 
 		await wait(1000);
 		await interaction.channel.send('3️⃣');
@@ -18,8 +18,8 @@ module.exports = {
 		await wait(500);
 
 		await interaction.channel.send({
-			content: '💣 BOOM!!!\nhttps://media.tenor.com/MfYkVGGrdbkAAAAd/gord%C3%A3o-bomba-nuclear.gif'
+			content: '💣 HIROSHIMA BOOM!!!',
+			files: ['./nuke.gif']  // ローカルに置いたGIFを送信
 		});
-
 	},
 };
