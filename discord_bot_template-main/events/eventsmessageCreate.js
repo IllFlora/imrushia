@@ -20,7 +20,7 @@ module.exports = {
 		// 「通信制高校」と完全一致した場合のみ
 		if (content === '通信制高校') {
 			try {
-				await message.reply('恥ずかしくないの？w');
+				await message.reply('通信でも誇りはあるよ！（笑）');
 			} catch (err) {
 				console.error('⚠️ 通信制高校メッセージ送信エラー:', err);
 			}
