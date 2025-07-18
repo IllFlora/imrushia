@@ -4,9 +4,9 @@ module.exports = {
 	async execute(message) {
 		if (message.author.bot) return;
 
-		const content = message.content.trim().toLowerCase(); // 前後の空白を除去して小文字に変換
+		const content = message.content.trim().toLowerCase();
 
-		// 「野獣先輩」を含む場合（部分一致）
+		// 「野獣先輩」を含む場合
 		if (content.includes('野獣先輩')) {
 			const url = 'https://video.laxd.com/a/content/SQSTQZRQoWtaZ470';
 			try {
@@ -26,5 +26,5 @@ module.exports = {
 			}
 			return;
 		}
-
 	}
+};
