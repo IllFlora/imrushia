@@ -17,14 +17,13 @@ module.exports = {
 			return;
 		}
 
-		// 「通信制高校」と完全一致した場合のみ
-		if (content === '通信制高校') {
+		// 「通信」を含むメッセージに反応
+		if (content.includes('通信')) {
 			try {
-				await message.reply('縄');
+				await message.reply('恥ずかしくないの？');
 			} catch (err) {
-				console.error('⚠️ 通信制高校メッセージ送信エラー:', err);
+				console.error('⚠️ 通信メッセージ送信エラー:', err);
 			}
 			return;
 		}
-	}
-};
+
