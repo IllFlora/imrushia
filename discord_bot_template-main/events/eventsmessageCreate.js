@@ -20,10 +20,11 @@ module.exports = {
 		// 「通信」を含むメッセージに反応
 		if (content.includes('通信')) {
 			try {
-				await message.reply('恥ずかしくないの？');
+				await message.reply('縄');
 			} catch (err) {
 				console.error('⚠️ 通信メッセージ送信エラー:', err);
 			}
 			return;
 		}
 
+	}
